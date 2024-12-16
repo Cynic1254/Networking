@@ -1,0 +1,6 @@
+#ifndef NETWORKING_LIBRARY_H
+#define NETWORKING_LIBRARY_H
+
+void hello();
+
+#endif //NETWORKING_LIBRARY_H
