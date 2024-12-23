@@ -4,6 +4,7 @@
 namespace CynNet {
 
 void Init();
+bool IsInitialized();
 void Close();
 
 } // namespace CynNet

@@ -7,10 +7,10 @@
 
 namespace CynNet {
 WSADATA wsaData;
-bool intialized = false;
+bool initialized = false;
 
-void CynNet::Init() {
-    if (intialized == false) {
+void Init() {
+    if (initialized == false) {
         int err = WSAStartup(MAKEWORD(2, 2), &wsaData);
 
         if (err != 0) {
@@ -34,11 +34,14 @@ void CynNet::Init() {
             }
         }
 
-        intialized = true;
+        initialized = true;
     }
 }
+
+bool IsInitialized() { return initialized; }
+
 void Close() {
-    if (intialized != false) {
+    if (initialized != false) {
         int err = WSACleanup();
         if (err != 0) {
             switch (err) {
@@ -54,7 +57,7 @@ void Close() {
                     throw WSAInvalidDataException{"Invalid WinSock Error"};
             }
         }
-        intialized = false;
+        initialized = false;
     }
 }
 

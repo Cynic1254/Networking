@@ -1,7 +1,7 @@
 #ifndef EXCEPTION_HPP
 #define EXCEPTION_HPP
+
 #include <exception>
-#include <stdexcept>
 #include <string>
 #include <utility>
 
@@ -20,8 +20,8 @@ class ExceptionT : public std::exception {
         [[nodiscard]] const char *what() const noexcept override { return msg.c_str(); }
 };
 
-template<class T = auto>
-class WSAExceptionT : public ExceptionT<struct WSAException> {
+template<class T>
+class WSAExceptionT : public ExceptionT<struct WSAExceptionTag> {
     public:
         WSAExceptionT() = default;
         explicit WSAExceptionT(const char *msg) : ExceptionT(msg) {}
@@ -29,13 +29,14 @@ class WSAExceptionT : public ExceptionT<struct WSAException> {
         ~WSAExceptionT() override = default;
 };
 
-using WSANotReadyException = WSAExceptionT<struct WSANotReady>;
-using WSAUnsupportedVersionException = WSAExceptionT<struct WSAUnsupportedVersion>;
-using WSAInProgressException = WSAExceptionT<struct WSAInProgress>;
-using WSAProcessLimitException = WSAExceptionT<struct WSAProcessLimit>;
-using WSAInvalidDataException = WSAExceptionT<struct WSAInvalidData>;
-using WSAEnetDownException = WSAExceptionT<struct WSAEnetDown>;
-using WSANotInitializedException = WSAExceptionT<struct WSANotInitialized>;
+using WSAException = ExceptionT<WSAExceptionTag>;
+using WSANotReadyException = WSAExceptionT<struct WSANotReadyTag>;
+using WSAUnsupportedVersionException = WSAExceptionT<struct WSAUnsupportedVersionTag>;
+using WSAInProgressException = WSAExceptionT<struct WSAInProgressTag>;
+using WSAProcessLimitException = WSAExceptionT<struct WSAProcessLimitTag>;
+using WSAInvalidDataException = WSAExceptionT<struct WSAInvalidDataTag>;
+using WSAEnetDownException = WSAExceptionT<struct WSAEnetDownTag>;
+using WSANotInitializedException = WSAExceptionT<struct WSANotInitializedTag>;
 
 } // namespace CynNet
 

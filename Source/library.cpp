@@ -5,7 +5,6 @@
 #include <ws2tcpip.h>
 
 void hello() {
-    
     WSAData wsaData;
 
     int iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
@@ -14,6 +13,9 @@ void hello() {
         std::cout << "WSAStartup failed with error: " << iResult << std::endl;
         return;
     }
+
+    std::cout << wsaData.wHighVersion << std::endl;
+    std::cout << wsaData.szDescription << std::endl;
 
     addrinfo *result = nullptr;
     addrinfo *ptr = nullptr;
