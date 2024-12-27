@@ -49,6 +49,8 @@ CynNet::IP::IP(sockaddr* ip)
 CynNet::IP::IP(const sockaddr_in& ipv4) :
     version(IpVersion::IPv4), port(ntohs(ipv4.sin_port))
 {
+    memcpy(&ip, &ipv4, sizeof(sockaddr_in));
+
     char ip_str[INET_ADDRSTRLEN] = {};
     inet_ntop(AF_INET, &ipv4.sin_addr, ip_str, sizeof(ip_str));
     ipString = ip_str;
@@ -100,6 +102,11 @@ CynNet::IP::IP(const std::string& ip, const int port, const IpVersion version) :
     }
 }
 
+int CynNet::IP::GetSockAddrSize() const
+{
+    return version == IpVersion::IPv4 ? sizeof(sockaddr_in) : sizeof(sockaddr_in6);
+}
+
 CynNet::Address::Address(const std::string& hostname, const int port, ConnectionType connection_type) :
     ipString(hostname)
 {
@@ -126,7 +133,11 @@ CynNet::Address::Address(const std::string& hostname, const int port, Connection
         // TODO: Handle errors
         switch (result)
         {
+        case WSATRY_AGAIN:
+            //TODO: implement retry system
+            break;
         default:
+            std::cerr << "getaddrinfo() failed: " << gai_strerror(result) << std::endl;
             break;
         }
     }

@@ -24,8 +24,10 @@ namespace CynNet
         [[nodiscard]] IpVersion Version() const { return version; }
         [[nodiscard]] int Port() const { return port; }
         [[nodiscard]] std::string ToString() const { return ipString; }
+        [[nodiscard]] int GetSockAddrSize() const;
+        [[nodiscard]] const sockaddr* SockAddr() const { return reinterpret_cast<const sockaddr*>(&ip); };
 
-        explicit operator sockaddr*() { return reinterpret_cast<sockaddr*>(&ip); }
+        explicit operator const sockaddr*() const { return SockAddr(); }
 
     private:
         sockaddr_storage ip{};

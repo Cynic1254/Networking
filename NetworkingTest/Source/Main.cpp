@@ -1,23 +1,16 @@
 #include <iostream>
 
 #include "Address.hpp"
+#include "Sockets.hpp"
 
 
 int main(int argc, const char* argv[])
 {
-    const auto address = CynNet::Address{"localhost", 80, CynNet::ConnectionType::UDP};
+    const auto address = CynNet::Address{"192.168.0.102", 3000, CynNet::ConnectionType::UDP};
+    const auto socket = CynNet::Socket{address.GetIP4Addresses()[0].first, address.GetIP4Addresses()[0].second};
 
-    std::cout << address.GetAddressName() << " Has these ip's:" << std::endl;
-
-    for (auto& ip4_address : address.GetIP4Addresses())
-    {
-        std::cout << ip4_address.first.ToString() << " Type: " << (int)ip4_address.second << std::endl;
-    }
-
-    for (auto& ip6_address : address.GetIP6Addresses())
-    {
-        std::cout << ip6_address.first.ToString() << " Type: " << (int)ip6_address.second << std::endl;
-    }
+    //socket.Send("Hello World", 11);
+    std::cout << socket.Receive(128).data() << std::endl;
 
     return 0;
 }
