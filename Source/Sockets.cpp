@@ -1,6 +1,7 @@
 #include "Sockets.hpp"
 
 #include <iostream>
+#include <utility>
 
 #include "wsadata.hpp"
 
@@ -20,7 +21,7 @@ namespace CynNet
         }
 
         sockaddr_in address{};
-        address.sin_family = AF_INET;
+        address.sin_family = static_cast<short>(ip.Version());
         address.sin_addr.S_un.S_addr = INADDR_ANY;
         address.sin_port = htons(static_cast<int>(ip.Port()));
 
@@ -45,40 +46,143 @@ namespace CynNet
         socketObject = INVALID_SOCKET;
     }
 
-    int Socket::Send(const char* data, const int size) const
+    Socket::Socket(const SOCKET socket, IP ip, const ConnectionType protocol) :
+        ip(std::move(ip)), protocol(protocol), socketObject(socket)
+    {
+    }
+
+    UDPSocket::UDPSocket(const IP& ip) :
+        Socket(ip, ConnectionType::UDP)
+    {
+    }
+
+    int UDPSocket::Send(const std::vector<char>& data) const
     {
         int result = 0;
 
-        if (protocol == ConnectionType::TCP)
-            result = send(socketObject, data, size, 0);
-        else
-            result = sendto(socketObject, data, size, 0, ip.SockAddr(), ip.GetSockAddrSize());
+        result = sendto(socketObject, data.data(), static_cast<int>(data.size()), 0, ip.SockAddr(),
+                        ip.GetSockAddrSize());
 
         if (result == SOCKET_ERROR)
         {
             std::cerr << "Socket send failed! " << WSAGetLastError() << std::endl;
             return 0;
         }
+
         return result;
     }
 
-    std::vector<char> Socket::Receive(const int size) const
+    std::vector<char> UDPSocket::Receive() const
     {
         std::vector<char> result;
-        result.resize(size);
 
-        int output = 0;
+        u_long bytes = 0;
+        if (ioctlsocket(socketObject, FIONREAD, &bytes) == SOCKET_ERROR)
+        {
+            std::cerr << "Socket receive failed! " << WSAGetLastError() << std::endl;
+            return result;
+        }
+        if (bytes == 0)
+            return result;
 
-        if (protocol == ConnectionType::TCP)
-            output = recv(socketObject, result.data(), size, 0);
-        else
-            output = recvfrom(socketObject, result.data(), size, 0, nullptr, nullptr);
+        result.resize(bytes);
 
-        if (output == SOCKET_ERROR)
+        int received = recvfrom(socketObject, result.data(), static_cast<int>(result.size()), 0, nullptr, nullptr);
+
+        if (received == SOCKET_ERROR)
         {
             std::cerr << "Socket receive failed! " << WSAGetLastError() << std::endl;
             result.clear();
+            return result;
         }
+
+        result.resize(received);
+        return result;
+    }
+
+    TCPSocket::TCPSocket(const IP& ip) :
+        Socket(ip, ConnectionType::TCP)
+    {
+    }
+
+    int TCPSocket::Send(const std::vector<char>& data) const
+    {
+        int result = 0;
+
+        result = send(socketObject, data.data(), static_cast<int>(data.size()), 0);
+
+        if (result == SOCKET_ERROR)
+        {
+            std::cerr << "Socket send failed! " << WSAGetLastError() << std::endl;
+            return 0;
+        }
+
+        return result;
+    }
+
+    std::vector<char> TCPSocket::Receive() const
+    {
+        std::vector<char> result;
+
+        u_long bytes = 0;
+        if (ioctlsocket(socketObject, FIONREAD, &bytes) == SOCKET_ERROR)
+        {
+            std::cerr << "Socket receive failed! " << WSAGetLastError() << std::endl;
+            return result;
+        }
+        if (bytes == 0)
+            return result;
+
+        result.resize(bytes);
+
+        int received = recv(socketObject, result.data(), static_cast<int>(result.size()), 0);
+
+        if (received == SOCKET_ERROR)
+        {
+            std::cerr << "Socket receive failed! " << WSAGetLastError() << std::endl;
+            result.clear();
+            return result;
+        }
+
+        result.resize(received);
+        return result;
+    }
+
+    TCPSocket::TCPSocket(const SOCKET socket, const IP& ip) :
+        Socket(socket, ip, ConnectionType::TCP)
+    {
+    }
+
+    TCPServer::TCPServer(const IP& ip, int maxConnections) :
+        Socket(ip, ConnectionType::TCP)
+    {
+        if (listen(socketObject, maxConnections) == SOCKET_ERROR)
+        {
+            std::cerr << "Socket listen failed! " << WSAGetLastError() << std::endl;
+        }
+    }
+
+    std::vector<TCPSocket> TCPServer::Accept() const
+    {
+        std::vector<TCPSocket> result;
+        fd_set fds{};
+        FD_ZERO(&fds);
+        FD_SET(socketObject, &fds);
+
+        do
+        {
+            sockaddr_storage address{};
+            socklen_t address_length = sizeof(address);
+
+            SOCKET newSocket = accept(socketObject, reinterpret_cast<sockaddr*>(&address), &address_length);
+
+            if (newSocket != INVALID_SOCKET)
+            {
+                result.emplace_back(TCPSocket{newSocket, IP{reinterpret_cast<sockaddr*>(&address)}});
+            }
+        }
+        while (select(0, &fds, nullptr, nullptr, nullptr) > 0);
+
         return result;
     }
 } // CynNet

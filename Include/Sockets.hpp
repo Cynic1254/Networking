@@ -10,15 +10,43 @@ namespace CynNet
     {
     public:
         Socket(const IP& ip, ConnectionType protocol);
-        ~Socket();
+        virtual ~Socket();
 
-        int Send(const char* data, int size) const;
-        [[nodiscard]] std::vector<char> Receive(int size) const;
+    protected:
+        Socket(SOCKET socket, IP ip, ConnectionType protocol);
 
-    private:
         IP ip;
         ConnectionType protocol;
         SOCKET socketObject = INVALID_SOCKET;
+    };
+
+    class UDPSocket : private Socket
+    {
+    public:
+        explicit UDPSocket(const IP& ip);
+
+        [[nodiscard]] int Send(const std::vector<char>& data) const;
+        [[nodiscard]] std::vector<char> Receive() const;
+    };
+
+    class TCPSocket : private Socket
+    {
+    public:
+        explicit TCPSocket(const IP& ip);
+        [[nodiscard]] int Send(const std::vector<char>& data) const;
+        [[nodiscard]] std::vector<char> Receive() const;
+
+    private:
+        friend class TCPServer;
+        TCPSocket(SOCKET socket, const IP& ip);
+    };
+
+    class TCPServer : private Socket
+    {
+    public:
+        explicit TCPServer(const IP& ip, int maxConnections = SOMAXCONN);
+
+        [[nodiscard]] std::vector<TCPSocket> Accept() const;
     };
 } // namespace CynNet
 
