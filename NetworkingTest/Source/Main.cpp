@@ -10,11 +10,17 @@ int main(int argc, const char* argv[])
     const auto socket = CynNet::UDPSocket{address.GetIP4Addresses()[0].first};
 
     char data[] = "Hello World!, this is extra data to test the limits!";
-    std::vector<char> bytes{data, data + sizeof(data)};
+    const std::vector<char> bytes{data, data + sizeof(data)};
 
-    int i = socket.Send(bytes);
+    const int i = socket.Send(bytes);
+    const auto recvData = socket.Receive();
 
-    std::cout << socket.Receive().data() << std::endl;
+    std::cout << recvData.data() << std::endl;
 
-    return 0;
+    if (recvData.size() == i)
+    {
+        return 0;
+    }
+
+    return 1;
 }

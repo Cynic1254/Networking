@@ -27,12 +27,16 @@ if (WIN32)
 endif ()
 
 if (TestProgram)
+    include(CTest)
+
     project(NetworkingTest)
 
     set(TEST_SOURCE_FILES NetworkingTest/Source/Main.cpp
             NetworkingTest/Source/Main.cpp)
 
     add_executable(NetworkingTest ${TEST_SOURCE_FILES})
+
+    add_test(NAME UDPSocket COMMAND NetworkingTest)
 
     target_link_libraries(NetworkingTest PUBLIC Networking)
 endif ()
