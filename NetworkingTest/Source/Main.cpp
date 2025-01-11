@@ -13,7 +13,7 @@ int main(int argc, const char* argv[])
     const std::vector<char> bytes{data, data + sizeof(data)};
 
     const int i = socket.Send(bytes);
-    const auto recvData = socket.Receive();
+    const auto recvData = socket.Receive(TODO);
 
     std::cout << recvData.data() << std::endl;
 

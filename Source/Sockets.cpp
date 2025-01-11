@@ -72,12 +72,12 @@ namespace CynNet
         return result;
     }
 
-    std::vector<char> UDPSocket::Receive() const
+    std::vector<char> UDPSocket::Receive(const u_long sizeLimit) const
     {
         std::vector<char> result;
 
-        u_long bytes = 0;
-        if (ioctlsocket(socketObject, FIONREAD, &bytes) == SOCKET_ERROR)
+        const u_long bytes = GetPendingBytes();
+        if (bytes == SOCKET_ERROR)
         {
             std::cerr << "Socket receive failed! " << WSAGetLastError() << std::endl;
             return result;
@@ -85,7 +85,10 @@ namespace CynNet
         if (bytes == 0)
             return result;
 
-        result.resize(bytes);
+        if (sizeLimit > 0)
+            result.resize(bytes < sizeLimit ? bytes : sizeLimit);
+        else
+            result.resize(bytes);
 
         int received = recvfrom(socketObject, result.data(), static_cast<int>(result.size()), 0, nullptr, nullptr);
 
@@ -98,6 +101,17 @@ namespace CynNet
 
         result.resize(received);
         return result;
+    }
+
+    u_long UDPSocket::GetPendingBytes() const
+    {
+        u_long bytes = 0;
+        if (ioctlsocket(socketObject, FIONREAD, &bytes) == SOCKET_ERROR)
+        {
+            std::cerr << "Socket receive failed! " << WSAGetLastError() << std::endl;
+        }
+
+        return bytes;
     }
 
     TCPSocket::TCPSocket(const IP& ip) :
@@ -120,12 +134,12 @@ namespace CynNet
         return result;
     }
 
-    std::vector<char> TCPSocket::Receive() const
+    std::vector<char> TCPSocket::Receive(const u_long sizeLimit) const
     {
         std::vector<char> result;
 
-        u_long bytes = 0;
-        if (ioctlsocket(socketObject, FIONREAD, &bytes) == SOCKET_ERROR)
+        const u_long bytes = GetPendingBytes();
+        if (bytes == SOCKET_ERROR)
         {
             std::cerr << "Socket receive failed! " << WSAGetLastError() << std::endl;
             return result;
@@ -133,7 +147,10 @@ namespace CynNet
         if (bytes == 0)
             return result;
 
-        result.resize(bytes);
+        if (sizeLimit > 0)
+            result.resize(bytes < sizeLimit ? bytes : sizeLimit);
+        else
+            result.resize(bytes);
 
         int received = recv(socketObject, result.data(), static_cast<int>(result.size()), 0);
 
@@ -146,6 +163,17 @@ namespace CynNet
 
         result.resize(received);
         return result;
+    }
+
+    u_long TCPSocket::GetPendingBytes() const
+    {
+        u_long bytes = 0;
+        if (ioctlsocket(socketObject, FIONREAD, &bytes) == SOCKET_ERROR)
+        {
+            std::cerr << "Socket receive failed! " << WSAGetLastError() << std::endl;
+        }
+
+        return bytes;
     }
 
     TCPSocket::TCPSocket(const SOCKET socket, const IP& ip) :
@@ -181,8 +209,16 @@ namespace CynNet
                 result.emplace_back(TCPSocket{newSocket, IP{reinterpret_cast<sockaddr*>(&address)}});
             }
         }
-        while (select(0, &fds, nullptr, nullptr, nullptr) > 0);
+        while (GetPendingConnections() > 0);
 
         return result;
+    }
+
+    int TCPServer::GetPendingConnections() const
+    {
+        fd_set fds{};
+        FD_ZERO(&fds);
+        FD_SET(socketObject, &fds);
+        return select(0, &fds, nullptr, nullptr, nullptr);
     }
 } // CynNet
