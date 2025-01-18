@@ -10,7 +10,7 @@ namespace CynNet
     class Socket
     {
     public:
-        Socket(const IP& ip, ConnectionType protocol);
+        Socket(const IP& ip, u_short listenPort, ConnectionType protocol);
         virtual ~Socket();
 
     protected:
@@ -25,12 +25,13 @@ namespace CynNet
     class UDPSocket : private Socket
     {
     public:
-        explicit UDPSocket(const IP& ip);
+        explicit UDPSocket(const IP& ip, u_short listenPort);
 
         /// @brief Send data over UDP connection
         /// @param data Data to send
+        /// @param ip ip to send data to, if ip is null data will be send to ip passed to the constructor
         /// @return Number of bytes that actually got send
-        [[nodiscard]] int Send(const std::vector<char>& data) const;
+        [[nodiscard]] int Send(const std::vector<char>& data, const IP* ip = nullptr) const;
         /// @brief Read the receive buffer or wait for a message to come in, if no messages are in the buffer this function will block
         /// @param sizeLimit Maximum size of the message that can be received, if there are more bytes in the message the overflow will be discarded. A value of <=0 means no limit and will always fit the whole message
         /// @return Bytes received
@@ -44,7 +45,7 @@ namespace CynNet
     class TCPSocket : private Socket
     {
     public:
-        explicit TCPSocket(const IP& ip);
+        explicit TCPSocket(const IP& ip, u_short listenPort);
 
         /// @brief Send data over TCP connection
         /// @param data Data to send

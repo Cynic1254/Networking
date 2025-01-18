@@ -7,7 +7,7 @@
 
 namespace CynNet
 {
-    Socket::Socket(const IP& ip, ConnectionType protocol) :
+    Socket::Socket(const IP& ip, const u_short listenPort, ConnectionType protocol) :
         ip(ip), protocol(protocol)
     {
         Init();
@@ -23,7 +23,7 @@ namespace CynNet
         sockaddr_in address{};
         address.sin_family = static_cast<short>(ip.Version());
         address.sin_addr.S_un.S_addr = INADDR_ANY;
-        address.sin_port = htons(static_cast<int>(ip.Port()));
+        address.sin_port = htons(listenPort);
 
         if (bind(socketObject, reinterpret_cast<sockaddr*>(&address), sizeof(sockaddr_in)) == SOCKET_ERROR)
         {
@@ -51,17 +51,18 @@ namespace CynNet
     {
     }
 
-    UDPSocket::UDPSocket(const IP& ip) :
-        Socket(ip, ConnectionType::UDP)
+    UDPSocket::UDPSocket(const IP& ip, u_short listenPort) :
+        Socket(ip, listenPort, ConnectionType::UDP)
     {
     }
 
-    int UDPSocket::Send(const std::vector<char>& data) const
+    int UDPSocket::Send(const std::vector<char>& data, const IP* ip) const
     {
         int result = 0;
 
-        result = sendto(socketObject, data.data(), static_cast<int>(data.size()), 0, ip.SockAddr(),
-                        ip.GetSockAddrSize());
+        result = sendto(socketObject, data.data(), static_cast<int>(data.size()), 0,
+                        ip ? ip->SockAddr() : this->ip.SockAddr(),
+                        ip ? ip->GetSockAddrSize() : this->ip.GetSockAddrSize());
 
         if (result == SOCKET_ERROR)
         {
@@ -114,8 +115,8 @@ namespace CynNet
         return bytes;
     }
 
-    TCPSocket::TCPSocket(const IP& ip) :
-        Socket(ip, ConnectionType::TCP)
+    TCPSocket::TCPSocket(const IP& ip, u_short listenPort) :
+        Socket(ip, listenPort, ConnectionType::TCP)
     {
     }
 
@@ -182,7 +183,7 @@ namespace CynNet
     }
 
     TCPServer::TCPServer(const IP& ip, int maxConnections) :
-        Socket(ip, ConnectionType::TCP)
+        Socket(ip, ip.Port(), ConnectionType::TCP)
     {
         if (listen(socketObject, maxConnections) == SOCKET_ERROR)
         {
